@@ -15,7 +15,7 @@ export function VehicleList({ vehicles, selectedId, onSelect }: Props) {
           <button className={`vehicle-row ${selectedId === vehicle.id ? "is-selected" : ""}`} onClick={() => onSelect(vehicle)}>
             <span className="vehicle-badge" style={{ backgroundColor: vehicle.color || vehicle.route?.color || "#536b7b" }} aria-hidden="true">{vehicle.route?.nameShort || "↗"}</span>
             <span className="vehicle-row-copy">
-              <strong>{vehicle.route?.nameShort ? `Linha ${vehicle.route.nameShort}` : vehicle.route?.name || "Linha por identificar"}</strong>
+              <strong>{vehicle.route?.id === "9" ? "Linha noturna" : vehicle.route?.nameShort ? `Linha ${vehicle.route.nameShort}` : vehicle.route?.name || "Linha por identificar"}</strong>
               <span>{vehicle.directionLabel || "Ver destino e próximas paragens"}</span>
             </span>
             <span className="vehicle-arrow" aria-hidden="true">›</span>

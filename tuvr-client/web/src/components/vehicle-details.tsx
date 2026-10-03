@@ -8,7 +8,7 @@ export function VehicleDetails({ vehicle, onClose }: Props) {
   const detail = useVehicleDetail(vehicle.id);
   const route = detail.data?.route ?? vehicle.route;
   return <section className="detail-card" aria-labelledby="vehicle-detail-title">
-    <div className="detail-heading"><div><p className="eyebrow">Autocarro</p><h2 id="vehicle-detail-title">{route?.nameShort ? `Linha ${route.nameShort}` : route?.name || "Linha por identificar"}</h2>{detail.dataUpdatedAt ? <span className="detail-updated">Última consulta: {formatTime(detail.dataUpdatedAt)}</span> : null}</div><button className="icon-button" onClick={onClose} aria-label="Fechar detalhe">×</button></div>
+    <div className="detail-heading"><div><p className="eyebrow">Autocarro</p><h2 id="vehicle-detail-title">{route?.id === "9" ? "Linha noturna" : route?.nameShort ? `Linha ${route.nameShort}` : route?.name || "Linha por identificar"}</h2>{detail.dataUpdatedAt ? <span className="detail-updated">Última consulta: {formatTime(detail.dataUpdatedAt)}</span> : null}</div><button className="icon-button" onClick={onClose} aria-label="Fechar detalhe">×</button></div>
     {detail.isPending ? <p className="muted">A carregar detalhe…</p> : null}
     {detail.isError ? <div className="detail-error"><p className="error-copy">Não foi possível atualizar o detalhe desta circulação.</p><button className="button button-small" onClick={() => void detail.refetch()} disabled={detail.isFetching}>Tentar novamente</button></div> : null}
     {detail.data ? <DetailContent data={detail.data} /> : <Summary vehicle={vehicle} />}

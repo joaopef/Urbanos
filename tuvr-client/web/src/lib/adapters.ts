@@ -10,7 +10,7 @@ export function adaptRoute(value: unknown): TransitRoute | null {
   return {
     id,
     name: asString(value.name ?? value.nameShort) || `Linha ${id}`,
-    nameShort: asOptionalString(value.nameShort),
+    nameShort: id === "9" ? "N" : asOptionalString(value.nameShort),
     description: asOptionalString(value.description),
     color: normalizeColor(value.color),
     isActive: asOptionalBoolean(value.isActive),
