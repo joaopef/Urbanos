@@ -13,10 +13,10 @@ export function VehicleList({ vehicles, selectedId, onSelect }: Props) {
       {vehicles.map((vehicle) => (
         <li key={vehicle.id}>
           <button className={`vehicle-row ${selectedId === vehicle.id ? "is-selected" : ""}`} onClick={() => onSelect(vehicle)}>
-            <span className="vehicle-badge" style={{ backgroundColor: vehicle.color || "var(--accent)" }} aria-hidden="true">{vehicle.id.slice(-2)}</span>
+            <span className="vehicle-badge" style={{ backgroundColor: vehicle.color || vehicle.route?.color || "#536b7b" }} aria-hidden="true">{vehicle.route?.nameShort || "↗"}</span>
             <span className="vehicle-row-copy">
-              <strong>{vehicle.route?.nameShort ? `Linha ${vehicle.route.nameShort}` : vehicle.route?.name || (vehicle.routeId ? `Linha ${vehicle.routeId}` : "Consultar linha e percurso")}</strong>
-              <span>Veículo {vehicle.id}</span>
+              <strong>{vehicle.route?.nameShort ? `Linha ${vehicle.route.nameShort}` : vehicle.route?.name || "Linha por identificar"}</strong>
+              <span>Ver destino e próximas paragens</span>
             </span>
             <span className="vehicle-arrow" aria-hidden="true">›</span>
           </button>

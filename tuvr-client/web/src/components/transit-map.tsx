@@ -48,14 +48,7 @@ export function TransitMap({ vehicles, routeDetail, selectedJourney, stops, plan
 }
 
 function HoveredStopPreview({ stop }: { stop: Stop }) {
-  const map = useMap();
   const position: [number, number] = [stop.position!.lat, stop.position!.lon];
-  const viewKey = `${stop.id}:${position[0]}:${position[1]}`;
-
-  useEffect(() => {
-    const zoom = Math.max(map.getZoom(), 16);
-    map.flyTo(position, zoom, { animate: true, duration: 0.45, easeLinearity: 0.2 });
-  }, [map, viewKey]);
 
   return (
     <Marker position={position} icon={selectedStopIcon("?", "#7c3aed")} zIndexOffset={1000}>
@@ -173,6 +166,9 @@ function AnimatedVehicleMarker({ vehicle, selected, onSelect }: { vehicle: Vehic
   useEffect(() => {
     const start = displayed.current;
     if (start[0] === target[0] && start[1] === target[1]) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      displayed.current = target; setPosition(target); return;
+    }
     const startedAt = performance.now();
     let frame = 0;
     const animate = (timestamp: number) => {
@@ -197,8 +193,10 @@ function AnimatedVehicleMarker({ vehicle, selected, onSelect }: { vehicle: Vehic
 
 function VehicleMarker({ vehicle, selected, onSelect }: { vehicle: VehicleLocation; selected: boolean; onSelect: (vehicle: VehicleLocation) => void }) {
   const position = vehicle.position!;
-  const icon = useMemo(() => L.divIcon({ className: "vehicle-map-icon-wrap", html: `<span class="vehicle-map-icon ${selected ? "is-selected" : ""}" style="--vehicle-color:${vehicle.color || "#146ef5"}">${escapeHtml(vehicle.id.slice(-2))}</span>`, iconSize: [38, 38], iconAnchor: [19, 19] }), [selected, vehicle.color, vehicle.id]);
-  return <Marker position={[position.lat, position.lon]} icon={icon} eventHandlers={{ click: () => onSelect(vehicle) }}><Popup>Veículo {vehicle.id}<br />{vehicle.route?.name || (vehicle.routeId ? `Linha ${vehicle.routeId}` : "Consulte a linha no painel de detalhe")}</Popup></Marker>;
+  const lineLabel = vehicle.route?.nameShort || vehicle.route?.name;
+  const iconLabel = lineLabel ? `Autocarro da linha ${lineLabel}` : "Autocarro sem linha identificada";
+  const icon = useMemo(() => L.divIcon({ className: "vehicle-map-icon-wrap", html: `<span class="vehicle-map-marker ${selected ? "is-selected" : ""}" role="img" aria-label="${escapeHtml(iconLabel)}" style="--vehicle-color:${escapeHtml(vehicle.color || vehicle.route?.color || "#536b7b")}"><svg class="vehicle-map-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 5h16a3 3 0 0 1 3 3v15a2 2 0 0 1-2 2v2h-3v-2H10v2H7v-2a2 2 0 0 1-2-2V8a3 3 0 0 1 3-3Zm0 3v9h16V8H8Zm1 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm14 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"/></svg>${lineLabel ? `<span class="vehicle-line-label">${escapeHtml(lineLabel)}</span>` : ""}</span>`, iconSize: lineLabel ? [70, 48] : [44, 44], iconAnchor: lineLabel ? [24, 24] : [22, 22] }), [selected, vehicle.color, vehicle.route?.color, lineLabel, iconLabel]);
+  return <Marker position={[position.lat, position.lon]} icon={icon} alt={lineLabel ? `Autocarro da linha ${lineLabel}` : "Autocarro sem linha identificada"} eventHandlers={{ click: () => onSelect(vehicle) }}><Popup>{lineLabel ? `Linha ${lineLabel}` : "Linha por identificar"}<br /><button type="button" onClick={() => onSelect(vehicle)}>Ver detalhe</button></Popup></Marker>;
 }
 
 const stopIcon = L.divIcon({ className: "stop-icon-wrap", html: '<span class="stop-icon" aria-hidden="true"></span>', iconSize: [24, 28], iconAnchor: [12, 24] });

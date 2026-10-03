@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { JourneyOption } from "../lib/planner/types";
 import type { Stop, StopRouteService } from "../lib/types";
 import { filterDepartures, isPastDeparture, type DepartureFilterCriteria } from "../lib/planner/filter-departures";
@@ -33,9 +34,12 @@ interface Props {
   onManualTimeChange: (value: string) => void;
   onFullDayChange: (value: boolean) => void;
   onViewTomorrow: () => void;
+  savedTrips?: ReactNode;
+  onShare: () => void;
+  shareMessage: string;
 }
 
-export function JourneyPlanner({ stops, origin, destination, onOriginChange, onDestinationChange, onSwap, originRoutes, destinationRoutes, options, selected, onHoverStop, onSelect, onCloseItinerary, dateChoice, serviceDay, todayKey, now, timeMode, manualTime, fullDay, onDateChange, onTimeModeChange, onManualTimeChange, onFullDayChange, onViewTomorrow }: Props) {
+export function JourneyPlanner({ stops, origin, destination, onOriginChange, onDestinationChange, onSwap, originRoutes, destinationRoutes, options, selected, onHoverStop, onSelect, onCloseItinerary, dateChoice, serviceDay, todayKey, now, timeMode, manualTime, fullDay, onDateChange, onTimeModeChange, onManualTimeChange, onFullDayChange, onViewTomorrow, savedTrips, onShare, shareMessage }: Props) {
   const sameStop = Boolean(origin && destination && origin.id === destination.id);
   const catalogError = originRoutes.isError || destinationRoutes.isError;
   const filterCriteria: DepartureFilterCriteria = { serviceDay, todayKey, nowSeconds: getLisbonClockSeconds(now), timeMode, manualTime, fullDay };
@@ -46,11 +50,13 @@ export function JourneyPlanner({ stops, origin, destination, onOriginChange, onD
   return (
     <section className="planner" aria-labelledby="planner-title">
       <div className="panel-section-heading"><div><p className="eyebrow">Planeador</p><h2 id="planner-title">Planear viagem</h2></div><span className="planner-symbol" aria-hidden="true">↗</span></div>
+      {savedTrips}
       <div className="planner-fields">
         <StopSearch label="Partida" selected={origin} stops={stops} onSelect={onOriginChange} onHoverStop={onHoverStop} disabled={!stops.length} />
         <StopSearch label="Destino" selected={destination} stops={stops} onSelect={onDestinationChange} onHoverStop={onHoverStop} disabled={!stops.length} />
         <button className="swap-button" type="button" onClick={onSwap} disabled={!origin && !destination} aria-label="Inverter partida e destino">↕ <span>Inverter</span></button>
       </div>
+      {origin && destination && !sameStop ? <div className="share-trip"><button className="button button-small" type="button" onClick={onShare}>Partilhar viagem</button>{shareMessage ? <span role="status">{shareMessage}</span> : null}</div> : null}
       <JourneyTimeControls dateChoice={dateChoice} serviceDay={serviceDay} todayKey={todayKey} nowSeconds={filterCriteria.nowSeconds} timeMode={timeMode} manualTime={manualTime} fullDay={fullDay} onDateChange={onDateChange} onTimeModeChange={onTimeModeChange} onManualTimeChange={onManualTimeChange} onFullDayChange={onFullDayChange} />
       {sameStop ? <p className="error-copy">Partida e destino têm de ser paragens diferentes.</p> : null}
       {catalogError ? <div className="planner-message"><strong>Não foi possível carregar as linhas das paragens.</strong><button className="button button-small" onClick={() => { void originRoutes.refetch(); void destinationRoutes.refetch(); }}>Tentar novamente</button></div> : null}
