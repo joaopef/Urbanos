@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchJourneyDetail, fetchRouteJourneys, fetchStopRouteJourneys } from "../lib/api";
+import { fetchJourneyDetail, fetchRouteDetail, fetchRoutes, fetchRouteJourneys, fetchStopRouteJourneys } from "../lib/api";
 import { findDirectConnections } from "../lib/planner/direct-connections";
 import type { JourneySearchResult } from "../lib/planner/types";
 import type { StopRouteService } from "../lib/types";
@@ -23,7 +23,26 @@ export function useJourneyOptions(
       const variants = [];
       let incomplete = false;
       const unconfirmedRouteIds: string[] = [];
-      for (const routeId of routeIds) {
+      // The stop service endpoint can be empty outside today's operating hours.
+      // Discover shared lines from the static stop catalog, then validate service
+      // using the selected day's journeys. Cache this catalog across searches.
+      const candidateRoutes = new Map((originRoutes ?? []).filter((item) => routeIds.includes(item.route.id)).map((item) => [item.route.id, item.route]));
+      const catalog = await queryClient.fetchQuery({ queryKey: ["planner-route-catalog"], staleTime: Infinity, queryFn: async ({ signal: catalogSignal }) => {
+        const routes = await queryClient.fetchQuery({ queryKey: ["routes"], queryFn: ({ signal: requestSignal }) => fetchRoutes(requestSignal), staleTime: Infinity });
+        const details = [];
+        let incomplete = false;
+        for (let index = 0; index < routes.length; index += 4) {
+          if (catalogSignal.aborted) throw new DOMException("Aborted", "AbortError");
+          const batch = await Promise.allSettled(routes.slice(index, index + 4).map((route) => queryClient.fetchQuery({ queryKey: ["route-detail", route.id], queryFn: ({ signal: requestSignal }) => fetchRouteDetail(route.id, requestSignal), staleTime: Infinity })));
+          for (const result of batch) { if (result.status === "fulfilled") details.push(result.value); else incomplete = true; }
+        }
+        return { details, incomplete };
+      } });
+      incomplete = catalog.incomplete;
+      for (const detail of catalog.details) {
+        if (detail.stops.some((stop) => stop.id === originId) && detail.stops.some((stop) => stop.id === destinationId)) candidateRoutes.set(detail.route.id, detail.route);
+      }
+      for (const routeId of candidateRoutes.keys()) {
         try {
           const [originTimes, destinationTimes] = await Promise.all([
             queryClient.fetchQuery({
@@ -65,7 +84,7 @@ export function useJourneyOptions(
             for (const detail of details) {
               if (!detail) continue;
               variants.push({
-                route: (originRoutes ?? []).find((item) => item.route.id === routeId)!.route,
+                route: candidateRoutes.get(routeId)!,
                 routeId,
                 journeyId: detail.journeyId,
                 day,
@@ -89,7 +108,7 @@ export function useJourneyOptions(
         }
       }
       const result = findDirectConnections(originId!, destinationId!, variants);
-      return { ...result, candidateRouteIds: routeIds, incomplete, unconfirmedRouteIds: [...new Set(unconfirmedRouteIds)] };
+      return { ...result, candidateRouteIds: [...candidateRoutes.keys()], incomplete, unconfirmedRouteIds: [...new Set(unconfirmedRouteIds)] };
     },
   });
 }

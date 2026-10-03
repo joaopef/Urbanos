@@ -238,10 +238,9 @@ export default function App() {
           }} />
         <header className="app-header">
           <div className="brand-mark" aria-hidden="true">U</div>
-          <div><p className="eyebrow">Transportes urbanos</p><h1>Vila Real</h1></div>
+          <div><h1>Urbanos</h1></div>
           <button className="icon-button panel-close" onClick={() => { setPanelCollapsed(true); setMobilePanelOpen(false); }} aria-label="Recolher painel">×</button>
         </header>
-        <p className="intro">Consulte as linhas, posições e ligações disponíveis.</p>
         <div className="panel-content">
           <div className="mode-switch" role="tablist" aria-label="Modo da aplicação">
           <button className={!plannerOpen ? "is-active" : ""} role="tab" aria-selected={!plannerOpen} onClick={() => { setHoveredStop(undefined); setPlannerOpen(false); setFocusedRouteId(selectedRouteId); }}>Mapa ao vivo</button>

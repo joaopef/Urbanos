@@ -81,7 +81,7 @@ export function adaptRouteDetail(payload: unknown, fallbackRouteId: string): Rou
     name: `Linha ${fallbackRouteId}`,
   };
   const stops = collection(record.stops ?? record.stations ?? record.routeStops, ["items", "data"])
-    .map(adaptStop)
+    .map(adaptVariantStop)
     .filter((stop): stop is Stop => stop !== null)
     .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER));
   const rawVariants = collection(record.variants ?? record.directions ?? record.routeVariants ?? record.journeys, ["items", "data"]);
