@@ -1,0 +1,9 @@
+analysis/
+.env
+.env.*
+node_modules/
+dist/
+*.tsbuildinfo
+__pycache__/
+*.py[cod]
+.venv/

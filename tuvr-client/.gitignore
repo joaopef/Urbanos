@@ -1,0 +1,31 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+.env
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Generated API snapshots. The samples directory remains tracked for curated
+# examples with other names in the future.
+samples/routes.json
+samples/stops.json
+samples/locations.json
+samples/route-*.json
+samples/locations-route-*.json
+samples/vehicle-*.json
+
+# Frontend dependencies and build output
+web/node_modules/
+web/dist/
