@@ -34,6 +34,31 @@ async function renderApp() {
 }
 
 describe("planeador com armazenamento indisponível", () => {
+  it("redimensiona o painel por toque e recolhe ao arrastar até ao fundo", async () => {
+    const widthDescriptor = Object.getOwnPropertyDescriptor(window, "innerWidth")!;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    const app = await renderApp();
+    try {
+      const handle = app.container.querySelector<HTMLButtonElement>('.panel-grabber')!;
+      const panel = app.container.querySelector<HTMLElement>('#control-panel')!;
+      handle.setPointerCapture = vi.fn(); handle.releasePointerCapture = vi.fn();
+      vi.spyOn(panel, "getBoundingClientRect").mockReturnValue({ height: 88 } as DOMRect);
+      const touch = async (type: string, y: number) => {
+        const event = new MouseEvent(type, { bubbles: true, button: 0, clientY: y });
+        Object.defineProperties(event, { pointerId: { value: 1 }, pointerType: { value: "touch" } });
+        await act(async () => { handle.dispatchEvent(event); });
+      };
+      await touch("pointerdown", 700); await touch("pointermove", 388); await touch("pointerup", 388);
+      expect(handle.getAttribute("aria-valuenow")).toBe("400");
+      expect(panel.classList.contains("mobile-open")).toBe(true);
+      expect(app.container.querySelector<HTMLElement>('.app-shell')!.style.getPropertyValue('--mobile-panel-height')).toBe("400px");
+      expect(handle.setPointerCapture).toHaveBeenCalledWith(1);
+      vi.mocked(panel.getBoundingClientRect).mockReturnValue({ height: 400 } as DOMRect);
+      await touch("pointerdown", 388); await touch("pointermove", 800); await touch("pointerup", 800);
+      expect(panel.classList.contains("mobile-open")).toBe(false);
+      expect(app.container.querySelector('.mobile-panel-is-dragging')).toBeNull();
+    } finally { await app.cleanup(); Object.defineProperty(window, "innerWidth", widthDescriptor); }
+  });
   it("identifica a linha e o destino quando as posições não incluem a rota", async () => {
     vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     vi.mocked(fetchLocations).mockResolvedValue([{ id: "bus", color: "#ff0000" }]);

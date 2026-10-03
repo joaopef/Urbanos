@@ -40,6 +40,10 @@ export default function App() {
   const [sharedTripError, setSharedTripError] = useState("");
   const [panelWidth, setPanelWidth] = useState(() => { try { const value = Number(localStorage.getItem("urbanos:panel-width")); return Number.isFinite(value) && value >= 320 ? value : 360; } catch { return 360; } });
   const [draggingPanel, setDraggingPanel] = useState(false);
+  const [mobilePanelHeight, setMobilePanelHeight] = useState(() => Math.min(680, Math.round(window.innerHeight * 0.65)));
+  const [draggingMobilePanel, setDraggingMobilePanel] = useState(false);
+  const mobileDrag = useRef({ y: 0, height: 88, pointerId: -1 });
+  const mobileBounds = () => ({ min: 88, max: Math.min(680, Math.round((window.visualViewport?.height ?? window.innerHeight) * 0.82)) });
   const panelBounds = () => ({ min: 320, max: Math.max(320, Math.min(520, window.innerWidth - 400)) });
   const restoredShare = useRef(false);
   const lastRecentKey = useRef("");
@@ -150,6 +154,17 @@ export default function App() {
     return () => { document.body.classList.remove("resizing-panel"); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); window.removeEventListener("pointercancel", end); };
   }, [draggingPanel]);
   useEffect(() => {
+    const resize = () => setMobilePanelHeight((height) => Math.max(mobileBounds().min, Math.min(mobileBounds().max, height)));
+    window.addEventListener("resize", resize);
+    window.visualViewport?.addEventListener("resize", resize);
+    return () => { window.removeEventListener("resize", resize); window.visualViewport?.removeEventListener("resize", resize); };
+  }, []);
+  const resizeMobilePanel = (height: number) => {
+    const bounds = mobileBounds();
+    setMobilePanelHeight(Math.max(bounds.min, Math.min(bounds.max, height)));
+    setMobilePanelOpen(true); setPanelCollapsed(false);
+  };
+  useEffect(() => {
     const parsed = sharedTripQuery;
     if (restoredShare.current) return;
     const params = new URLSearchParams(window.location.search);
@@ -193,10 +208,34 @@ export default function App() {
   };
 
   return (
-    <main className={`app-shell ${panelCollapsed ? "panel-is-collapsed" : ""}`} style={{ "--panel-width": `${panelWidth}px` } as CSSProperties}>
+    <main className={`app-shell ${panelCollapsed ? "panel-is-collapsed" : ""} ${draggingMobilePanel ? "mobile-panel-is-dragging" : ""}`} style={{ "--panel-width": `${panelWidth}px`, "--mobile-panel-height": `${mobilePanelHeight}px`, "--mobile-visible-height": `${!panelCollapsed && mobilePanelOpen ? mobilePanelHeight : 88}px` } as CSSProperties}>
       <TransitMap vehicles={mapVehicles} routeDetail={routeDetail.data} selectedJourney={previewJourney} stops={stops.data ?? []} plannerMode={plannerOpen} selectedOrigin={originStop} selectedDestination={destinationStop} hoveredStop={hoveredStop} selectedVehicleId={selectedVehicle?.id} onSelectVehicle={selectVehicle} onSelectStop={selectPlannerStop} />
       <aside id="control-panel" className={`control-panel ${mobilePanelOpen ? "mobile-open" : ""}`} aria-label="Controlo do mapa">
-        <div className="panel-grabber" aria-hidden="true" />
+        <button className="panel-grabber" type="button" role="separator" aria-label="Redimensionar altura do painel" aria-orientation="horizontal" aria-controls="control-panel" aria-valuemin={mobileBounds().min} aria-valuemax={mobileBounds().max} aria-valuenow={mobilePanelOpen ? mobilePanelHeight : 88}
+          onPointerDown={(event) => {
+            if (event.button !== 0 || window.innerWidth > 1023) return;
+            event.preventDefault();
+            const height = event.currentTarget.closest("aside")!.getBoundingClientRect().height;
+            mobileDrag.current = { y: event.clientY, height, pointerId: event.pointerId };
+            event.currentTarget.setPointerCapture(event.pointerId);
+            setDraggingMobilePanel(true);
+            resizeMobilePanel(height);
+          }}
+          onPointerMove={(event) => { if (mobileDrag.current.pointerId === event.pointerId) resizeMobilePanel(mobileDrag.current.height + mobileDrag.current.y - event.clientY); }}
+          onPointerUp={(event) => {
+            if (mobileDrag.current.pointerId !== event.pointerId) return;
+            mobileDrag.current.pointerId = -1; setDraggingMobilePanel(false);
+            if (mobilePanelHeight < 160) { setMobilePanelOpen(false); setMobilePanelHeight(Math.min(mobileBounds().max, Math.round(window.innerHeight * 0.65))); }
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }}
+          onLostPointerCapture={() => { mobileDrag.current.pointerId = -1; setDraggingMobilePanel(false); }}
+          onPointerCancel={() => { mobileDrag.current.pointerId = -1; setDraggingMobilePanel(false); }}
+          onKeyDown={(event) => {
+            const height = mobilePanelOpen ? mobilePanelHeight : 88;
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") { event.preventDefault(); resizeMobilePanel(height + (event.key === "ArrowUp" ? 32 : -32)); }
+            else if (event.key === "End") { event.preventDefault(); resizeMobilePanel(mobileBounds().max); }
+            else if (event.key === "Home") { event.preventDefault(); setMobilePanelOpen(false); }
+          }} />
         <header className="app-header">
           <div className="brand-mark" aria-hidden="true">U</div>
           <div><p className="eyebrow">Transportes urbanos</p><h1>Vila Real</h1></div>
