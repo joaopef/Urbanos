@@ -209,7 +209,7 @@ export default function App() {
 
   return (
     <main className={`app-shell ${panelCollapsed ? "panel-is-collapsed" : ""} ${draggingMobilePanel ? "mobile-panel-is-dragging" : ""}`} style={{ "--panel-width": `${panelWidth}px`, "--mobile-panel-height": `${mobilePanelHeight}px`, "--mobile-visible-height": `${!panelCollapsed && mobilePanelOpen ? mobilePanelHeight : 88}px` } as CSSProperties}>
-      <TransitMap vehicles={mapVehicles} routeDetail={routeDetail.data} selectedJourney={previewJourney} stops={stops.data ?? []} plannerMode={plannerOpen} selectedOrigin={originStop} selectedDestination={destinationStop} hoveredStop={hoveredStop} selectedVehicleId={selectedVehicle?.id} onSelectVehicle={selectVehicle} onSelectStop={selectPlannerStop} />
+      <TransitMap vehicles={mapVehicles} positionsUpdatedAt={locations.dataUpdatedAt} routeDetail={routeDetail.data} selectedJourney={previewJourney} stops={stops.data ?? []} plannerMode={plannerOpen} selectedOrigin={originStop} selectedDestination={destinationStop} hoveredStop={hoveredStop} selectedVehicleId={selectedVehicle?.id} onSelectVehicle={selectVehicle} onSelectStop={selectPlannerStop} />
       <aside id="control-panel" className={`control-panel ${mobilePanelOpen ? "mobile-open" : ""}`} aria-label="Controlo do mapa">
         <button className="panel-grabber" type="button" role="separator" aria-label="Redimensionar altura do painel" aria-orientation="horizontal" aria-controls="control-panel" aria-valuemin={mobileBounds().min} aria-valuemax={mobileBounds().max} aria-valuenow={mobilePanelOpen ? mobilePanelHeight : 88}
           onPointerDown={(event) => {
