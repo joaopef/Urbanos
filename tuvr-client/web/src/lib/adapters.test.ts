@@ -78,7 +78,7 @@ describe("adapters", () => {
     }, "4", "1725");
     expect(detail?.circulations.map((item) => item.sequence)).toEqual([1, 2, 3]);
     expect(detail?.circulations.map((item) => item.stop.id)).toEqual(["A", "B", "A"]);
-    expect(detail?.direction).toBe("0");
+    expect(detail?.direction).toBe("Sentido A");
     expect(adaptJourneyDetail({ circulations: [{ stage: { stop: { id: "A", name: "A" } } }] }, "4", "1725")).toBeNull();
   });
 });

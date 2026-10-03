@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useRouteDetail } from "./hooks/use-route-detail";
 import { useRoutes } from "./hooks/use-routes";
 import { useVehicleLocations } from "./hooks/use-vehicle-locations";
+import { useVehicleSummaries } from "./hooks/use-vehicle-summaries";
 import { useStops } from "./hooks/use-stops";
 import { useStopRoutes } from "./hooks/use-stop-routes";
 import { useJourneyOptions } from "./hooks/use-journey-options";
@@ -52,18 +53,20 @@ export default function App() {
   const journeyOptions = useJourneyOptions(originStop?.id, destinationStop?.id, originRoutes.data, destinationRoutes.data, serviceDay);
   const routeDetail = useRouteDetail(focusedRouteId ?? selectedRouteId);
   const locations = useVehicleLocations(plannerOpen ? undefined : selectedRouteId, true);
+  const summaries = useVehicleSummaries(locations.data ?? [], locations.pageVisible && !locations.isError);
   const journeyVehicles = useJourneyVehicles(
-    locations.data ?? [],
+    (locations.data ?? []).map((vehicle) => ({ ...vehicle, routeId: vehicle.routeId ?? summaries.data?.[vehicle.id]?.routeId, route: vehicle.route ?? summaries.data?.[vehicle.id]?.route })),
     selectedJourney?.leg.routeId ?? selectedJourney?.leg.route.id,
     selectedJourney?.leg.journeyId,
     plannerOpen && Boolean(selectedJourney),
   );
   const selectedRoute = routes.data?.find((route) => route.id === selectedRouteId);
   const vehicles = useMemo(() => (locations.data ?? []).map((vehicle) => {
-    const catalogRoute = routes.data?.find((route) => route.id === vehicle.routeId);
-    if (vehicle.route || !catalogRoute) return vehicle;
-    return { ...vehicle, route: catalogRoute, color: vehicle.color || catalogRoute.color };
-  }), [locations.data, routes.data]);
+    const summary = summaries.data?.[vehicle.id];
+    const routeId = vehicle.routeId ?? summary?.routeId;
+    const route = vehicle.route ?? summary?.route ?? routes.data?.find((item) => item.id === routeId);
+    return { ...vehicle, routeId, route, color: vehicle.color || route?.color, directionLabel: summary?.journey?.direction };
+  }), [locations.data, routes.data, summaries.data]);
   const mapVehicles = plannerOpen ? (selectedJourney ? journeyVehicles.data : []) : vehicles;
   // O relógio filtra apenas a lista; o percurso desenhado mantém-se estável para
   // que uma atualização temporal não altere o enquadramento do mapa.

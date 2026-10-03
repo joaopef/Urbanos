@@ -1,6 +1,7 @@
 import { decodePolyline } from "./polyline";
 import type { Coordinate, JourneyCirculation, JourneyDetail, OrderedRouteVariant, Position, RouteDetail, Stop, StopJourneyTime, StopRouteService, TransitRoute, VehicleDetail, VehicleLocation, VehicleStop } from "./types";
 import { isRecord } from "./guards";
+import { getDirectionLabel } from "./vehicle";
 
 export function adaptRoute(value: unknown): TransitRoute | null {
   if (!isRecord(value)) return null;
@@ -67,7 +68,7 @@ export function adaptJourneyDetail(payload: unknown, routeId: string, journeyId:
   return {
     routeId,
     journeyId,
-    direction: asOptionalString(payload.direction),
+    direction: getDirectionLabel(asOptionalString(payload.direction), validCirculations.map((item) => item.stop)),
     shape: adaptShape(payload.shape ?? payload.polyline),
     circulations: [...validCirculations].sort((a, b) => a.sequence - b.sequence),
   };
@@ -119,21 +120,22 @@ export function adaptVehicleDetail(payload: unknown, fallbackId: string): Vehicl
   const base = adaptVehicle(payload) ?? { id: fallbackId };
   const record = isRecord(payload) ? payload : {};
   const journeyValue = record.journey;
+  const stopItems = collection(isRecord(journeyValue) ? journeyValue.circulations : record.circulations ?? record.progress, ["items", "data"]);
+  const stops = stopItems.map(adaptVehicleStop).filter((stop): stop is VehicleStop => stop !== null);
   const journey = isRecord(journeyValue) ? {
     id: asOptionalString(journeyValue.id),
     name: asOptionalString(journeyValue.name),
     description: asOptionalString(journeyValue.description),
-    direction: asOptionalString(journeyValue.direction),
+    direction: getDirectionLabel(asOptionalString(journeyValue.direction), stops),
     startTime: asOptionalString(journeyValue.startTime),
     endTime: asOptionalString(journeyValue.endTime),
     isActive: asOptionalBoolean(journeyValue.isActive),
     type: asOptionalString(journeyValue.type),
   } : undefined;
-  const stopItems = collection(record.journey && isRecord(record.journey) ? record.journey.circulations : record.circulations ?? record.progress, ["items", "data"]);
   return {
     ...base,
     journey,
-    stops: stopItems.map(adaptVehicleStop).filter((stop): stop is VehicleStop => stop !== null),
+    stops,
     currentStopSequence: asOptionalNumber(record.currentStopSequence),
     fleetId: asOptionalString(record.fleetId),
     licensePlate: asOptionalString(record.licensePlate),
@@ -164,7 +166,7 @@ function adaptOrderedVariant(value: unknown): OrderedRouteVariant | null {
   return {
     routeId: asOptionalString(value.routeId),
     journeyId: asOptionalString(value.journeyId ?? value.id),
-    direction: asOptionalString(value.direction ?? value.name),
+    direction: getDirectionLabel(asOptionalString(value.direction), stops),
     stops: [...stops].sort((a, b) => (a.sequence! - b.sequence!)),
   };
 }

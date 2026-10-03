@@ -16,7 +16,7 @@ export function VehicleList({ vehicles, selectedId, onSelect }: Props) {
             <span className="vehicle-badge" style={{ backgroundColor: vehicle.color || vehicle.route?.color || "#536b7b" }} aria-hidden="true">{vehicle.route?.nameShort || "↗"}</span>
             <span className="vehicle-row-copy">
               <strong>{vehicle.route?.nameShort ? `Linha ${vehicle.route.nameShort}` : vehicle.route?.name || "Linha por identificar"}</strong>
-              <span>Ver destino e próximas paragens</span>
+              <span>{vehicle.directionLabel || "Ver destino e próximas paragens"}</span>
             </span>
             <span className="vehicle-arrow" aria-hidden="true">›</span>
           </button>

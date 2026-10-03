@@ -34,6 +34,7 @@ export interface VehicleLocation {
   speed?: number;
   delay?: number;
   sourceUpdatedAt?: string;
+  directionLabel?: string;
 }
 
 export interface RouteDetail {

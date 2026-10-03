@@ -4,24 +4,25 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import { fetchStopRoutes, fetchStopRouteJourneys, fetchJourneyDetail } from "./lib/api";
-import type { StopRouteService, StopJourneyTime, JourneyDetail } from "./lib/types";
+import { fetchStopRoutes, fetchStopRouteJourneys, fetchJourneyDetail, fetchLocations, fetchVehicleDetail } from "./lib/api";
+import { adaptVehicleDetail } from "./lib/adapters";
+import type { StopRouteService, StopJourneyTime, JourneyDetail, VehicleLocation, VehicleDetail } from "./lib/types";
 
 vi.mock("./components/transit-map", () => ({ TransitMap: () => null }));
 vi.mock("./lib/api", () => ({
   fetchRoutes: async () => [],
   fetchStops: async () => [{ id: "a", name: "Partida de teste" }, { id: "b", name: "Destino de teste" }],
-  fetchLocations: async () => [],
+  fetchLocations: vi.fn(async (): Promise<VehicleLocation[]> => []),
   fetchStopRoutes: vi.fn(async (): Promise<StopRouteService[]> => []),
   fetchStopRouteJourneys: vi.fn(async (): Promise<StopJourneyTime[]> => []),
   fetchRouteJourneys: async () => [],
   fetchJourneyDetail: vi.fn(async (): Promise<JourneyDetail | null> => null),
   fetchRouteDetail: async () => null,
-  fetchVehicleDetail: async () => null,
+  fetchVehicleDetail: vi.fn(async (): Promise<VehicleDetail> => ({ id: "unknown", stops: [] })),
 }));
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-afterEach(() => { vi.restoreAllMocks(); vi.mocked(fetchStopRoutes).mockResolvedValue([]); vi.mocked(fetchStopRouteJourneys).mockResolvedValue([]); vi.mocked(fetchJourneyDetail).mockResolvedValue(null); window.history.replaceState(null, "", "/"); });
+afterEach(() => { vi.restoreAllMocks(); vi.mocked(fetchLocations).mockReset().mockResolvedValue([]); vi.mocked(fetchVehicleDetail).mockReset().mockResolvedValue({ id: "unknown", stops: [] }); vi.mocked(fetchStopRoutes).mockResolvedValue([]); vi.mocked(fetchStopRouteJourneys).mockResolvedValue([]); vi.mocked(fetchJourneyDetail).mockResolvedValue(null); window.history.replaceState(null, "", "/"); });
 
 async function renderApp() {
   const container = document.createElement("div");
@@ -33,6 +34,23 @@ async function renderApp() {
 }
 
 describe("planeador com armazenamento indisponível", () => {
+  it("identifica a linha e o destino quando as posições não incluem a rota", async () => {
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
+    vi.mocked(fetchLocations).mockResolvedValue([{ id: "bus", color: "#ff0000" }]);
+    vi.mocked(fetchVehicleDetail).mockResolvedValue(adaptVehicleDetail({ id: "bus", route: { id: "1", name: "LORDELO - UTAD", nameShort: "1" }, journey: { direction: 1, circulations: [
+      { sequence: 1, stage: { id: "hospital", name: "HOSPITAL" } },
+      { sequence: 2, stage: { id: "lordelo", name: "LORDELO" } },
+    ] } }, "bus"));
+    const app = await renderApp();
+    try {
+      await vi.waitFor(async () => {
+        await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+        expect(app.container.querySelector('.vehicle-row-copy strong')?.textContent).toBe("Linha 1");
+      });
+      expect(app.container.querySelector('.vehicle-row-copy span')?.textContent).toBe("Sentido LORDELO");
+      expect(fetchVehicleDetail).toHaveBeenCalledTimes(1);
+    } finally { await app.cleanup(); }
+  });
   it("seleciona uma ligação direta mantendo o painel móvel aberto", async () => {
     const route = { id: "1", name: "Linha de teste", nameShort: "1" };
     vi.mocked(fetchStopRoutes).mockResolvedValue([{ route, journeys: [] }]);
