@@ -10,7 +10,7 @@ const VILA_REAL: [number, number] = [41.3006, -7.7441];
 // currently render an API KEY REQUIRED watermark. Keep the known working,
 // no-key fallback and allow deployments to configure another provider.
 const DEFAULT_TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const DEFAULT_TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors";
+const DEFAULT_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 interface Props {
   vehicles: VehicleLocation[];
@@ -44,7 +44,6 @@ export function TransitMap({ vehicles, positionsUpdatedAt, routeDetail, selected
         {selectedDestination?.position ? <Marker position={[selectedDestination.position.lat, selectedDestination.position.lon]} icon={selectedStopIcon("D", "#bc3c39")}><Popup>Destino: {selectedDestination.name}</Popup></Marker> : null}
         {vehicles.filter((vehicle) => vehicle.position).map((vehicle) => <AnimatedVehicleMarker key={vehicle.id} vehicle={vehicle} positionsUpdatedAt={positionsUpdatedAt} selected={vehicle.id === selectedVehicleId} motionAllowed={motionAllowed} onSelect={onSelectVehicle} />)}
       </MapContainer>
-      <div className="map-note">Mapa base e dados de transporte sujeitos às respetivas condições de utilização.</div>
     </div>
   );
 }
