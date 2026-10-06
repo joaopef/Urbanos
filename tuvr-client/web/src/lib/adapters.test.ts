@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { adaptJourneyDetail, adaptRouteDetail, adaptStopRouteJourneys, adaptVehicle, adaptVehicleDetail, adaptStopRoutes, normalizeColor } from "./adapters";
 
 describe("adapters", () => {
+  it("formats vehicle schedule seconds as clock times, including midnight", () => {
+    const detail = adaptVehicleDetail({ journey: { circulations: [
+      { sequence: 1, stage: { id: "a", name: "A" }, arrivalTime: 40800, departureTime: "40860" },
+      { sequence: 2, stage: { id: "b", name: "B" }, arrivalTime: "23:59:00", departureTime: 86460 },
+      { sequence: 3, stage: { id: "c", name: "C" }, arrivalTime: "invalid", departureTime: -1 },
+    ] } }, "bus");
+    expect(detail.stops.map(({ arrivalTime, departureTime }) => [arrivalTime, departureTime])).toEqual([
+      ["11:20", "11:21"], ["23:59", "00:01"], [undefined, undefined],
+    ]);
+  });
   it("normalizes valid colours and rejects unsupported values", () => {
     expect(normalizeColor("146ef5")).toBe("#146ef5");
     expect(normalizeColor("#abc")).toBe("#abc");

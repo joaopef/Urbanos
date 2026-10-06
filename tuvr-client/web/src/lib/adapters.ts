@@ -2,6 +2,7 @@ import { decodePolyline } from "./polyline";
 import type { Coordinate, JourneyCirculation, JourneyDetail, OrderedRouteVariant, Position, RouteDetail, Stop, StopJourneyTime, StopRouteService, TransitRoute, VehicleDetail, VehicleLocation, VehicleStop } from "./types";
 import { isRecord } from "./guards";
 import { getDirectionLabel } from "./vehicle";
+import { formatServiceTime } from "./time";
 
 export function adaptRoute(value: unknown): TransitRoute | null {
   if (!isRecord(value)) return null;
@@ -151,11 +152,20 @@ function adaptVehicleStop(value: unknown): VehicleStop | null {
   if (!stop) return null;
   return {
     ...stop,
-    arrivalTime: asOptionalString(value.arrivalTime ?? stage.arrivalTime),
-    departureTime: asOptionalString(value.departureTime ?? stage.departureTime),
+    arrivalTime: adaptClockTime(value.arrivalTime ?? stage.arrivalTime),
+    departureTime: adaptClockTime(value.departureTime ?? stage.departureTime),
     dueInMinutes: asOptionalNumber(value.dueInMinutes ?? stage.dueInMinutes),
     stage: asOptionalString(value.stageName ?? stage.name),
   };
+}
+
+function adaptClockTime(value: unknown): string | undefined {
+  if (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value))) return formatServiceTime(Number(value));
+  if (typeof value === "string" && /^\d{1,2}:\d{2}(:\d{2})?$/.test(value)) {
+    const [hours, minutes, seconds = "0"] = value.split(":").map(Number);
+    if (minutes < 60 && Number(seconds) < 60) return formatServiceTime(hours * 3600 + minutes * 60 + Number(seconds));
+  }
+  return undefined;
 }
 
 function adaptOrderedVariant(value: unknown): OrderedRouteVariant | null {

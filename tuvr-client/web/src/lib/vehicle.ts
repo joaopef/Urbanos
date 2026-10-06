@@ -8,7 +8,7 @@ export function getDirectionLabel(direction: string | undefined, stops: Pick<Sto
   return terminal?.name ? `Sentido ${terminal.name}` : undefined;
 }
 
-export function selectUpcomingStops(stops: VehicleStop[], currentStopSequence?: number, limit = 4): VehicleStop[] {
+export function selectUpcomingStops(stops: VehicleStop[], currentStopSequence?: number, limit = Infinity): VehicleStop[] {
   return [...stops]
     .filter((stop) => stop.dueInMinutes === undefined || stop.dueInMinutes >= 0)
     .filter((stop) => stop.dueInMinutes !== undefined || currentStopSequence === undefined || stop.sequence === undefined || stop.sequence > currentStopSequence)
