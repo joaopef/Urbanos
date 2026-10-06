@@ -99,6 +99,12 @@ h3 { margin-bottom: 10px; color: var(--navy); font-size: 16px; }
 .itinerary-timetable li { padding-left: 3px; font-size: 13px; overflow-wrap: anywhere; }
 .itinerary-timetable li span { display: block; font-weight: 700; }
 .itinerary-timetable small { display: block; color: var(--muted); }
+.journey-result-expanded { border: 1px solid #b9d4f9; border-radius: 9px; overflow-anchor: none; }
+.journey-result-expanded .journey-result-row { border: 0; border-radius: 8px 8px 0 0; }
+.journey-result-expanded .itinerary-card { border: 0; border-radius: 0 0 8px 8px; }
+.itinerary-card .detail-heading h3 { margin: 0; font-size: 14px; }
+.itinerary-departure { margin: 0; font-size: 13px; font-weight: 700; }
+.itinerary-departure small { display: block; margin-top: 3px; color: var(--muted); }
 .panel-footer { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.45; }
 .panel-footer p { margin: 0 0 7px; }
 .panel-footer strong { color: var(--ink); }

@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 import type { JourneyOption } from "../lib/planner/types";
 import type { Stop, StopRouteService } from "../lib/types";
-import { filterDepartures, isPastDeparture, type DepartureFilterCriteria } from "../lib/planner/filter-departures";
+import { filterDepartures, type DepartureFilterCriteria } from "../lib/planner/filter-departures";
 import { getLisbonClockSeconds, type DateChoice, type TimeMode } from "../lib/service-time";
-import { JourneyItinerary } from "./journey-itinerary";
 import { JourneyResults } from "./journey-results";
 import { StopSearch } from "./stop-search";
 import { JourneyTimeControls } from "./journey-time-controls";
@@ -60,8 +59,7 @@ export function JourneyPlanner({ stops, origin, destination, onOriginChange, onD
       <JourneyTimeControls dateChoice={dateChoice} serviceDay={serviceDay} todayKey={todayKey} nowSeconds={filterCriteria.nowSeconds} timeMode={timeMode} manualTime={manualTime} fullDay={fullDay} onDateChange={onDateChange} onTimeModeChange={onTimeModeChange} onManualTimeChange={onManualTimeChange} onFullDayChange={onFullDayChange} />
       {sameStop ? <p className="error-copy">Partida e destino têm de ser paragens diferentes.</p> : null}
       {catalogError ? <div className="planner-message"><strong>Não foi possível carregar as linhas das paragens.</strong><button className="button button-small" onClick={() => { void originRoutes.refetch(); void destinationRoutes.refetch(); }}>Tentar novamente</button></div> : null}
-      {!catalogError && !sameStop && origin && destination ? <JourneyResults result={options.data} loading={originRoutes.isPending || destinationRoutes.isPending || options.isPending} error={options.isError ? options.error : null} selected={selected} onSelect={onSelect} filterResult={filterResult} filterCriteria={filterCriteria} emptyMessage={emptyMessage} onViewFullDay={() => onFullDayChange(true)} onViewTomorrow={serviceDay === todayKey ? onViewTomorrow : undefined} /> : <JourneyResults loading={false} onSelect={onSelect} />}
-      {selected ? <JourneyItinerary option={selected} onClose={onCloseItinerary} past={isPastDeparture(selected, filterCriteria)} /> : null}
+      {!catalogError && !sameStop && origin && destination ? <JourneyResults result={options.data} loading={originRoutes.isPending || destinationRoutes.isPending || options.isPending} error={options.isError ? options.error : null} selected={selected} onSelect={onSelect} onClose={onCloseItinerary} filterResult={filterResult} filterCriteria={filterCriteria} emptyMessage={emptyMessage} onViewFullDay={() => onFullDayChange(true)} onViewTomorrow={serviceDay === todayKey ? onViewTomorrow : undefined} /> : <JourneyResults loading={false} onSelect={onSelect} />}
     </section>
   );
 }

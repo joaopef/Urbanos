@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { VehicleDetails } from "./vehicle-details";
 import { JourneyItinerary } from "./journey-itinerary";
+import { JourneyResults } from "./journey-results";
 import type { JourneyOption } from "../lib/planner/types";
 
 vi.mock("../hooks/use-vehicle-detail", () => ({ useVehicleDetail: () => ({
@@ -57,9 +58,47 @@ describe("horários por paragem", () => {
     const container = await render(<JourneyItinerary option={option} onClose={() => {}} />);
     const rows = [...container.querySelectorAll('.itinerary-timetable li')];
     expect(rows.map((row) => row.textContent)).toEqual([
-      "Origem novamenteProgramado · 23:55", "Meia-noiteProgramado · 00:01", "Sem horaHorário não disponível",
+      "Origem novamenteProgramado · 23:55", "Meia-noiteProgramado · 00:01", "Sem horaHorário não disponível", "Destino · DestinoChegar às 00:05",
     ]);
     expect(container.textContent).toContain("Apanhar às 23:50");
     expect(container.textContent).toContain("Chegar às 00:05");
+  });
+
+  it("expands the chosen row in place with four stops, more details, and collapse on a second click", async () => {
+    const option: JourneyOption = { id: "first", kind: "direct", quality: "confirmed", leg: {
+      route: { id: "1", name: "Linha 1" },
+      boarding: { stop: { id: "a", name: "Origem" }, order: 0, departureTime: 36000 },
+      intermediateStops: Array.from({ length: 6 }, (_, i) => ({ stop: { id: `s${i}`, name: `Paragem ${i + 1}` }, order: i + 1, arrivalTime: 36060 + i * 60 })),
+      alighting: { stop: { id: "z", name: "Fim" }, order: 7, arrivalTime: 36420 },
+    } };
+    const other = { ...option, id: "second" };
+    function Results() {
+      const [selected, setSelected] = useState<JourneyOption>();
+      return <JourneyResults result={{ options: [option, other], incomplete: false, candidateRouteIds: ["1"], unconfirmedRouteIds: [] }} loading={false} selected={selected} onSelect={setSelected} onClose={() => setSelected(undefined)} />;
+    }
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { configurable: true, value: scroll });
+    try {
+      const container = await render(<Results />);
+      const buttons = [...container.querySelectorAll<HTMLButtonElement>('.journey-result-row')];
+      await act(async () => buttons[0].click());
+      const first = buttons[0].closest('li')!;
+      expect(first.querySelector('.itinerary-card')).not.toBeNull();
+      expect(buttons[0].getAttribute('aria-expanded')).toBe('true');
+      expect(first.querySelector('.itinerary-timetable > ol')?.children).toHaveLength(4);
+      const more = first.querySelector<HTMLDetailsElement>('.remaining-stops')!;
+      expect(more.open).toBe(false);
+      more.open = true;
+      expect(more.querySelectorAll('li')).toHaveLength(3);
+      expect(more.textContent).toContain('Fim · Destino');
+      expect(more.querySelector('ol')?.start).toBe(5);
+      expect(scroll).not.toHaveBeenCalled();
+      await act(async () => buttons[1].click());
+      expect(first.querySelector('.itinerary-card')).toBeNull();
+      expect(buttons[1].closest('li')?.querySelector('.itinerary-card')).not.toBeNull();
+      expect(buttons[1].closest('li')?.querySelector<HTMLDetailsElement>('.remaining-stops')?.open).toBe(false);
+      await act(async () => buttons[1].click());
+      expect(container.querySelector('.itinerary-card')).toBeNull();
+    } finally { Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView"); }
   });
 });
