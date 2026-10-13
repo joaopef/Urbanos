@@ -3,7 +3,7 @@
 Aplicação web não oficial para consultar linhas, paragens, horários e posições
 dos autocarros dos Transportes Urbanos de Vila Real.
 
-Site: https://joaopef.github.io/Urbanos/
+Site: https://urbanos.jopefer.com/
 
 ## Desenvolvimento
 
@@ -16,15 +16,21 @@ npm run dev
 ## Publicação
 
 Cada push para `main` executa os testes, compila a aplicação com o caminho base
-`/Urbanos/` e publica `tuvr-client/web/dist` através do GitHub Actions.
+indicado pelo GitHub Pages e publica `tuvr-client/web/dist` através do GitHub Actions.
 GitHub Pages deve usar a origem **GitHub Actions**.
+
+O domínio personalizado nas definições Pages é `urbanos.jopefer.com`. Na Cloudflare,
+o registo CNAME `urbanos` aponta para `joaopef.github.io`, com proxy desativado
+(DNS only). O build usa `/` no domínio personalizado e `/Urbanos/` se for
+restaurado o endereço original do GitHub Pages. Ativar Enforce HTTPS quando o
+certificado do domínio estiver disponível.
 
 Para validar o build de publicação localmente:
 
 ```sh
 cd tuvr-client/web
 npm test
-npm run build -- --base /Urbanos/
+npm run build -- --base /
 npm run preview
 ```
 
@@ -40,7 +46,7 @@ estão excluídos da publicação.
 ## Estatísticas e QR code
 
 Criar uma propriedade Google Analytics 4, com fuso horário de Lisboa, e um fluxo
-Web para `https://joaopef.github.io/Urbanos/`. Colocar o ID `G-…` na variável de
+Web para `https://urbanos.jopefer.com/`. Colocar o ID `G-…` na variável de
 repositório **GA_MEASUREMENT_ID** (Settings → Secrets and variables → Actions →
 Variables) e executar novamente o workflow Publish GitHub Pages. O ID é público,
 não é uma palavra-passe. Sem esta variável o Analytics e o aviso ficam desativados.
@@ -53,7 +59,7 @@ recolha limitada às visitas; os eventos básicos de sessão são geridos pela G
 As paragens dos links partilhados não são incluídas no URL enviado à tag.
 
 Endereço para o QR code:
-`https://joaopef.github.io/Urbanos/?utm_source=qr&utm_medium=offline&utm_campaign=divulgacao`
+`https://urbanos.jopefer.com/?utm_source=qr&utm_medium=offline&utm_campaign=divulgacao`
 
 Os acessos com consentimento aparecem nos relatórios de aquisição com campanha
 `divulgacao` e origem/meio `qr / offline`. Para testar, abrir o QR, aceitar as
