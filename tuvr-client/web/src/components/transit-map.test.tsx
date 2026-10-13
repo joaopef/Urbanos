@@ -3,6 +3,8 @@ import { act, Profiler } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { TransitMap } from "./transit-map";
+import type { JourneyOption } from "../lib/planner/types";
+import type { Stop, RouteDetail } from "../lib/types";
 
 const marker = vi.hoisted(() => ({ setLatLng: vi.fn() }));
 vi.mock("react-leaflet", async () => {
@@ -10,10 +12,36 @@ vi.mock("react-leaflet", async () => {
   const Container = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
   return {
     MapContainer: Container, Popup: Container,
-    Marker: React.forwardRef((_props, ref) => { React.useImperativeHandle(ref, () => marker); return null; }),
-    Polyline: () => null, TileLayer: () => null, Tooltip: Container, ZoomControl: () => null,
-    useMap: () => ({ invalidateSize: () => undefined }),
+    Marker: React.forwardRef(({ children }: { children?: React.ReactNode }, ref) => { React.useImperativeHandle(ref, () => marker); return <div data-testid="map-marker">{children}</div>; }),
+    Polyline: () => <div data-testid="route-path" />, TileLayer: () => null, Tooltip: Container, ZoomControl: () => null,
+    useMap: () => ({ invalidateSize: () => undefined, fitBounds: () => undefined }),
   };
+});
+
+it("oculta paragens de outras linhas, mantém a linha completa e repõe o catálogo ao limpar a seleção", () => {
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  const stop = (id: string): Stop => ({ id, name: `Paragem ${id}`, position: { lat: 41.3, lon: -7.74 } });
+  const stops = [stop("a"), stop("b"), stop("c"), stop("outra")];
+  const detail: RouteDetail = { route: { id: "1", name: "Linha 1" }, stops: stops.slice(0, 3), shape: [], variants: [], variantDataAvailable: false };
+  const journey: JourneyOption = { id: "trip", kind: "direct", quality: "confirmed", leg: { route: detail.route, routeId: "1", boarding: { stop: stops[0], order: 0 }, alighting: { stop: stops[1], order: 1 }, intermediateStops: [] } };
+  const container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  const view = (selectedJourney?: JourneyOption, routeDetail?: RouteDetail) => <TransitMap vehicles={[]} stops={stops} plannerMode selectedJourney={selectedJourney} routeDetail={routeDetail} onSelectStop={() => {}} onSelectVehicle={() => {}} />;
+  act(() => root!.render(view(journey, detail)));
+  expect(container.querySelector('[data-testid="route-path"]')).not.toBeNull();
+  expect(container.textContent).toContain("Paragem c");
+  expect(container.textContent).not.toContain("Paragem outra");
+  expect(container.querySelectorAll('[data-testid="map-marker"]')).toHaveLength(3);
+  act(() => root!.render(view(journey, { ...detail, route: { id: "2", name: "Outra linha" }, stops: [stops[3]] })));
+  expect(container.textContent).not.toContain("Paragem outra");
+  expect(container.querySelectorAll('[data-testid="map-marker"]')).toHaveLength(2);
+  act(() => root!.render(view()));
+  expect(container.textContent).toContain("Paragem outra");
+  expect(container.querySelectorAll('[data-testid="map-marker"]')).toHaveLength(4);
+  act(() => root!.render(view(undefined, detail)));
+  expect(container.textContent).not.toContain("Paragem outra");
+  expect(container.querySelectorAll('[data-testid="map-marker"]')).toHaveLength(3);
 });
 let root: Root | undefined;
 afterEach(() => { if (root) act(() => root!.unmount()); root = undefined; document.body.innerHTML = ""; vi.restoreAllMocks(); vi.unstubAllGlobals(); marker.setLatLng.mockClear(); });

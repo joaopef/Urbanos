@@ -30,6 +30,11 @@ interface Props {
 export function TransitMap({ vehicles, positionsUpdatedAt, routeDetail, selectedJourney, stops, plannerMode, selectedOrigin, selectedDestination, hoveredStop, selectedVehicleId, onSelectVehicle, onSelectStop }: Props) {
   const mapShellRef = useRef<HTMLDivElement>(null);
   const motionAllowed = useVehicleMotionPreference();
+  const journeyStopIds = useMemo(() => new Set(selectedJourney ? [selectedJourney.leg.boarding, ...selectedJourney.leg.intermediateStops, selectedJourney.leg.alighting].map((item) => item.stop.id) : []), [selectedJourney]);
+  const matchingRoute = selectedJourney && routeDetail?.route.id === (selectedJourney.leg.routeId ?? selectedJourney.leg.route.id) ? routeDetail : undefined;
+  const catalogStops = useMemo(() => selectedJourney
+    ? (matchingRoute?.stops ?? []).filter((stop) => !journeyStopIds.has(stop.id))
+    : routeDetail ? [] : stops, [selectedJourney, matchingRoute, journeyStopIds, routeDetail, stops]);
   return (
     <div ref={mapShellRef} className="map-shell" aria-label="Mapa de transportes de Vila Real">
       <MapContainer center={VILA_REAL} zoom={14} minZoom={11} className="map" zoomControl={false} keyboard>
@@ -37,11 +42,11 @@ export function TransitMap({ vehicles, positionsUpdatedAt, routeDetail, selected
         <MapResizeObserver containerRef={mapShellRef} />
         <MapActions routeDetail={routeDetail} selectedJourney={selectedJourney} />
         <ZoomControl position="topright" />
-        {plannerMode && selectedJourney ? <JourneyLayer option={selectedJourney} /> : !plannerMode && routeDetail ? <RouteLayer detail={routeDetail} /> : null}
-        {plannerMode ? <StopCatalog stops={stops} onSelect={onSelectStop} /> : null}
+        {plannerMode && selectedJourney ? <JourneyLayer option={selectedJourney} /> : routeDetail ? <RouteLayer detail={routeDetail} /> : null}
+        {plannerMode ? <StopCatalog stops={catalogStops} onSelect={onSelectStop} /> : null}
         {plannerMode && hoveredStop?.position ? <HoveredStopPreview stop={hoveredStop} /> : null}
-        {selectedOrigin?.position ? <Marker position={[selectedOrigin.position.lat, selectedOrigin.position.lon]} icon={selectedStopIcon("P", "#16845a")}><Popup>Partida: {selectedOrigin.name}</Popup></Marker> : null}
-        {selectedDestination?.position ? <Marker position={[selectedDestination.position.lat, selectedDestination.position.lon]} icon={selectedStopIcon("D", "#bc3c39")}><Popup>Destino: {selectedDestination.name}</Popup></Marker> : null}
+        {!selectedJourney && selectedOrigin?.position ? <Marker position={[selectedOrigin.position.lat, selectedOrigin.position.lon]} icon={selectedStopIcon("P", "#16845a")}><Popup>Partida: {selectedOrigin.name}</Popup></Marker> : null}
+        {!selectedJourney && selectedDestination?.position ? <Marker position={[selectedDestination.position.lat, selectedDestination.position.lon]} icon={selectedStopIcon("D", "#bc3c39")}><Popup>Destino: {selectedDestination.name}</Popup></Marker> : null}
         {vehicles.filter((vehicle) => vehicle.position).map((vehicle) => <AnimatedVehicleMarker key={vehicle.id} vehicle={vehicle} positionsUpdatedAt={positionsUpdatedAt} selected={vehicle.id === selectedVehicleId} motionAllowed={motionAllowed} onSelect={onSelectVehicle} />)}
       </MapContainer>
     </div>
